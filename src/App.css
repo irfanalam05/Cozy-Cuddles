@@ -212,18 +212,6 @@ section.bg-deepblue {
 
 .header--scrolled .nav {
   gap: 6px;
-  animation: nav-items-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
-}
-
-@keyframes nav-items-pop {
-  0% {
-    transform: scale(0.8) translateY(8px);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
 }
 
 .nav-item {
@@ -232,7 +220,7 @@ section.bg-deepblue {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background 0.3s ease, color 0.3s ease, padding 0.3s ease;
   position: relative;
   display: flex;
   align-items: center;
@@ -251,7 +239,7 @@ section.bg-deepblue {
 .nav-icon {
   font-size: 22px;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: color 0.3s ease, font-size 0.3s ease, font-variation-settings 0.3s ease;
   flex-shrink: 0;
 }
 
@@ -261,7 +249,7 @@ section.bg-deepblue {
   opacity: 0;
   overflow: hidden;
   white-space: nowrap;
-  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: max-width 0.35s ease, opacity 0.35s ease, margin 0.35s ease;
   margin-left: 0;
   font-family: var(--font-body);
 }
@@ -289,10 +277,6 @@ section.bg-deepblue {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.header--scrolled .header-actions {
-  animation: nav-items-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
 }
 
 .icon-btn {
