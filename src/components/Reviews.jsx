@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 function Reviews() {
   const reviews = [
     {
@@ -44,6 +46,24 @@ function Reviews() {
     },
   ]
 
+  const [currentPage, setCurrentPage] = useState(0)
+  const reviewsPerPage = window.innerWidth <= 600 ? 1 : 3
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage)
+
+  const startIndex = currentPage * reviewsPerPage
+  const visibleReviews = reviews.slice(
+    startIndex,
+    startIndex + reviewsPerPage
+  )
+
+  const nextReviews = () => {
+    setCurrentPage((prev) => (prev + 1) % totalPages)
+  }
+
+  const previousReviews = () => {
+    setCurrentPage((prev) => (prev - 1 + totalPages) % totalPages)
+  }
+
   return (
     <section id="reviews" className="reviews-section">
       <div className="reviews-heading">
@@ -52,24 +72,62 @@ function Reviews() {
         <span>Real reviews from real families who love Cozy & Cuddles.</span>
       </div>
 
-      <div className="reviews-grid">
-        {reviews.map((review) => (
-          <article className="review-card" key={review.id}>
-            <div className="review-stars">
-              {'★'.repeat(review.rating)}
-              {'☆'.repeat(5 - review.rating)}
-            </div>
-            <p className="review-text">&ldquo;{review.text}&rdquo;</p>
-            <div className="review-author">
-              <div className="review-avatar">
-                {review.name.charAt(0)}
+      <div className="reviews-slider">
+
+        <button
+          className="reviews-arrow reviews-arrow-left"
+          onClick={previousReviews}
+          aria-label="Previous reviews"
+        >
+          ‹
+        </button>
+
+        <div className="reviews-grid">
+          {visibleReviews.map((review) => (
+            <article className="review-card" key={review.id}>
+              <div className="review-stars">
+                {'★'.repeat(review.rating)}
+                {'☆'.repeat(5 - review.rating)}
               </div>
-              <div className="review-info">
-                <strong>{review.name}</strong>
-                <span>{review.product}</span>
+
+              <p className="review-text">
+                &ldquo;{review.text}&rdquo;
+              </p>
+
+              <div className="review-author">
+                <div className="review-avatar">
+                  {review.name.charAt(0)}
+                </div>
+
+                <div className="review-info">
+                  <strong>{review.name}</strong>
+                  <span>{review.product}</span>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
+          ))}
+        </div>
+
+        <button
+          className="reviews-arrow reviews-arrow-right"
+          onClick={nextReviews}
+          aria-label="Next reviews"
+        >
+          ›
+        </button>
+
+      </div>
+
+      <div className="reviews-dots">
+        {Array.from({ length: totalPages }).map((_, index) => (
+          <button
+            key={index}
+            className={`reviews-dot ${
+              currentPage === index ? 'active' : ''
+            }`}
+            onClick={() => setCurrentPage(index)}
+            aria-label={`Go to review page ${index + 1}`}
+          />
         ))}
       </div>
     </section>

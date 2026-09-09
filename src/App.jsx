@@ -13,6 +13,7 @@ import { CrawlKid } from './components/Decor'
 import Login from './components/Login'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
+import Reviews from './components/Reviews'
 import { useHashRoute } from './router'
 
 const heroBeltItems = [
@@ -85,6 +86,7 @@ function Home() {
       <NewArrivals />
       <AboutUs />
       <WhyChooseUs />
+      <Reviews />
     </main>
   )
 }
@@ -108,7 +110,7 @@ function App() {
       ) : (
         <Home />
       )}
-      <Footer />
+      {window.location.hash !== '#wishlist' && <Footer />}
     </div>
   )
 }

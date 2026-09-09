@@ -16,7 +16,7 @@ function PromoBanner() {
     <section className="promo-banner">
       <img
         className="promo-banner-img"
-        src="/banners/banner1.png"
+        src="/banners/banner.png"
         alt="Cozy & Cuddles products banner"
       />
       {hotspots.map((h, i) => (

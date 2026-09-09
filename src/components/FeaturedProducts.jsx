@@ -18,7 +18,7 @@ function FeaturedProducts() {
           <h2>Shop our best essentials</h2>
         </div>
 
-        <div className="featured-products">
+        <div className="featured-products featured-products--cards">
           <CircleStrip items={featured} />
         </div>
       </div>

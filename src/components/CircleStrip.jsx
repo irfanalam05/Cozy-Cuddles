@@ -1,14 +1,20 @@
 import { useRef } from 'react'
 
 function CircleStrip({ items, onItemClick }) {
-  const scrollRef = useRef(null)
+  const trackRef = useRef(null)
 
   const scrollBy = (dir) => {
-    const el = scrollRef.current
-    if (!el) return
-    const item = el.querySelector('.circle-item')
-    const step = item ? item.offsetWidth + 20 : 240
-    el.scrollBy({ left: dir * step, behavior: 'smooth' })
+    const track = trackRef.current
+    if (!track) return
+
+    const item = track.querySelector('.circle-item')
+    const gap = 20
+    const step = item ? item.offsetWidth + gap : 300
+
+    track.scrollBy({
+      left: dir * step,
+      behavior: 'smooth',
+    })
   }
 
   return (
@@ -19,24 +25,38 @@ function CircleStrip({ items, onItemClick }) {
         aria-label="Previous"
         onClick={() => scrollBy(-1)}
       >
-        <span className="material-symbols-outlined">chevron_left</span>
+        <span className="material-symbols-outlined">
+          chevron_left
+        </span>
       </button>
 
-      <div className="circle-strip-track" ref={scrollRef}>
+      <div className="circle-strip-track" ref={trackRef}>
         {items.map((item) => {
           const Tag = onItemClick ? 'button' : 'a'
+
           return (
             <Tag
               key={item.id}
               href={onItemClick ? undefined : '#categories'}
               type={onItemClick ? 'button' : undefined}
               className="circle-item"
-              onClick={onItemClick ? () => onItemClick(item) : undefined}
+              onClick={
+                onItemClick
+                  ? () => onItemClick(item)
+                  : undefined
+              }
             >
               <div className="circle-item-pic">
-                <img src={item.image} alt={item.name} />
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  loading="lazy"
+                />
               </div>
-              <span className="circle-item-name">{item.name}</span>
+
+              <span className="circle-item-name">
+                {item.name}
+              </span>
             </Tag>
           )
         })}
@@ -48,7 +68,9 @@ function CircleStrip({ items, onItemClick }) {
         aria-label="Next"
         onClick={() => scrollBy(1)}
       >
-        <span className="material-symbols-outlined">chevron_right</span>
+        <span className="material-symbols-outlined">
+          chevron_right
+        </span>
       </button>
     </div>
   )

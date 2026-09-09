@@ -33,13 +33,18 @@ function Wishlist() {
 
       {wishlist.length === 0 ? (
         <div className="wishlist-empty">
-          <span className="material-symbols-outlined">favorite_border</span>
-          <h2>Your wishlist is empty</h2>
-          <p>Add products you love and they'll appear here.</p>
+          <span className="wishlist-circle wishlist-circle-1"></span>
+          <span className="wishlist-circle wishlist-circle-2"></span>
+          <span className="wishlist-ring"></span>
+          <span className="wishlist-deco wishlist-deco-left">♥</span>
+          <span className="wishlist-deco wishlist-deco-right">♥</span>
+          <h2>A little more cozy is waiting for your little one❤️</h2>
+          <p>Save your favorite products here and find them easily whenever you need them.</p>
           <a href="#categories" className="shop-btn">
             Explore Categories →
           </a>
         </div>
+        
       ) : (
         <div className="wishlist-grid">
           {wishlist.map((product) => (
