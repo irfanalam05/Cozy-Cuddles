@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
 import { products } from './data/products'
+import Cart from './Cart'
 
 function Header() {
   const [cartOpen, setCartOpen] = useState(false)
+  const [cartItems, setCartItems] = useState(() => {
+    return JSON.parse(localStorage.getItem('cart') || '[]')
+  })
   const [wishlistOpen, setWishlistOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -61,11 +65,11 @@ function Header() {
               >
               <span className="material-symbols-outlined">favorite</span>
             </button>
-            <button
-              className="icon-btn"
-              aria-label="Cart"
-              onClick={() => setCartOpen(!cartOpen)}
-            >
+            <button className="icon-btn" aria-label="Cart" onClick={() => {
+                  setCartItems(JSON.parse(localStorage.getItem('cart') || '[]'))
+                  setCartOpen(!cartOpen)
+                }}
+              >
               <span className="material-symbols-outlined">shopping_bag</span>
             </button>
 
@@ -133,37 +137,7 @@ function Header() {
           </button>
         </div>
       )}
-
-      {cartOpen && (
-        <div className="cart-panel">
-          <div className="cart-panel-header">
-            <h3>Your Cart</h3>
-            <button
-              className="cart-close"
-              onClick={() => setCartOpen(false)}
-              aria-label="Close cart"
-            >
-              &times;
-            </button>
-          </div>
-          <div className="cart-empty">
-            <div className="cart-empty-icon">
-              <span className="material-symbols-outlined" style={{ fontSize: 56 }}>
-                shopping_bag
-              </span>
-            </div>
-            <h4>Your cart is empty</h4>
-            <p>Add products to your cart and they will appear here.</p>
-            <a
-              href="#products"
-              className="cart-shop-btn"
-              onClick={() => setCartOpen(false)}
-            >
-              Browse Products &rarr;
-            </a>
-          </div>
-        </div>
-      )}
+      {cartOpen && <Cart onClose={() => setCartOpen(false)} />}
     </>
   )
 }

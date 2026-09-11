@@ -44,7 +44,7 @@ function Footer() {
         <div className="footer-links">
           <h3>Follow Us</h3>
 
-          <a href="#" aria-label="Instagram">Instagram</a>
+          <a href="https://www.instagram.com/cozyandcuddles_?stkn=eGZncHltdnhobXp2" aria-label="Instagram">Instagram</a>
           <a href="#" aria-label="Facebook">Facebook</a>
           <a href="#" aria-label="LinkedIn">LinkedIn</a>
           <a href="#" aria-label="Twitter">Twitter</a>

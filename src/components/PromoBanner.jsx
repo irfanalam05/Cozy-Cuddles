@@ -2,14 +2,15 @@ import { categoryPath } from '../router'
 
 function PromoBanner() {
   const hotspots = [
-    { label: 'Sleeping Bags' },
-    { label: 'Baby Tricycle' },
-    { label: 'Baby Bullets' },
-    { label: 'Baby Walker' },
-    { label: 'Mosquito Beds' },
-    { label: 'Sleeping Swings' },
-    { label: 'Ride On Toys' },
-    { label: 'Swings' },
+    { label: 'Swings', link: categoryPath('Swings') },
+    { label: 'Baby Playgyms', link: categoryPath('Baby Playgyms') },
+    { label: 'Mosquito Beds', link: categoryPath('Mosquito Beds') },
+    { label: 'Sleeping Bags', link: categoryPath('Sleeping Bags') },
+    { label: 'Sleeping Swings', link: categoryPath('Sleeping Swings') },
+    { label: 'Ride On Toys', link: categoryPath('Ride On Toys') },
+    { label: 'Baby Bullets', link: categoryPath('Baby Bullets') },
+    { label: 'Baby Tricycle', link: categoryPath('Baby Tricycle') },
+    { label: 'Baby Walker', link: categoryPath('Baby Walker') },
   ]
 
   return (
@@ -19,19 +20,20 @@ function PromoBanner() {
         src="/banners/banner.png"
         alt="Cozy & Cuddles products banner"
       />
+
       {hotspots.map((h, i) => (
         <a
           key={h.label}
-          href={categoryPath(h.label)}
+          href={h.link}
           className="promo-hotspot"
           aria-label={h.label}
-          onClick={(e) => {
-            e.preventDefault()
-            window.location.hash = categoryPath(h.label)
-            window.scrollTo({ top: 0 })
+          style={{
+            left: `${(i * 2 + 1) * 6.25}%`,
           }}
-          style={{ left: `${(i * 100) / (hotspots.length - 1)}%` }}
-        ></a>
+          onClick={() => {
+            window.scrollTo(0, 75)
+          }}
+        />
       ))}
     </section>
   )

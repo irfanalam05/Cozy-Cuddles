@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronLeft, ChevronRight,Quote } from 'lucide-react'
 
 function Reviews() {
   const reviews = [
@@ -79,7 +80,7 @@ function Reviews() {
           onClick={previousReviews}
           aria-label="Previous reviews"
         >
-          ‹
+          <ChevronLeft size={22} strokeWidth={2} />
         </button>
 
         <div className="reviews-grid">
@@ -89,7 +90,10 @@ function Reviews() {
                 {'★'.repeat(review.rating)}
                 {'☆'.repeat(5 - review.rating)}
               </div>
-
+              
+              <div className="review-quote-icon">
+                <Quote size={24} strokeWidth={1.8} />
+              </div>
               <p className="review-text">
                 &ldquo;{review.text}&rdquo;
               </p>
@@ -113,7 +117,7 @@ function Reviews() {
           onClick={nextReviews}
           aria-label="Next reviews"
         >
-          ›
+          <ChevronRight size={22} strokeWidth={2} />
         </button>
 
       </div>
