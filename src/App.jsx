@@ -2,6 +2,7 @@ import PromoBanner from './components/PromoBanner'
 import WhyChooseUs from './components/WhyChooseUs'
 import './App.css'
 import Header from './Header'
+import Cart from './Cart'
 import Categories from './components/Categories'
 import AboutUs from './components/AboutUs'
 import NewArrivals from './components/NewArrivals'
@@ -101,6 +102,8 @@ function App() {
         <CategoryPage category={route.category} />
       ) : window.location.hash === '#wishlist' ? (
         <Wishlist />
+      ) : window.location.hash === '#cart' ? (
+        <Cart isPage />
       ) : window.location.hash === '#login' ? (
         <Login />
       ) : window.location.hash === '#/YWRtaW5sb2dpbg==' ? (
@@ -110,7 +113,7 @@ function App() {
       ) : (
         <Home />
       )}
-      {window.location.hash !== '#wishlist' && <Footer />}
+      {window.location.hash !== '#wishlist' && window.location.hash !== '#cart' && <Footer />}
     </div>
   )
 }

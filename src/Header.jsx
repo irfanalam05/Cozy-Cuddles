@@ -66,9 +66,19 @@ function Header() {
               <span className="material-symbols-outlined">favorite</span>
             </button>
             <button className="icon-btn" aria-label="Cart" onClick={() => {
-                  setCartItems(JSON.parse(localStorage.getItem('cart') || '[]'))
-                  setCartOpen(!cartOpen)
-                }}
+                const items = JSON.parse(localStorage.getItem('cart') || '[]')
+
+                if (items.length === 0) {
+                  setCartItems([])
+                  setCartOpen(true)
+                } else {
+                  window.location.hash = '#cart'
+                  setCartOpen(false)
+                }
+
+                setSearchOpen(false)
+                setWishlistOpen(false)
+              }}
               >
               <span className="material-symbols-outlined">shopping_bag</span>
             </button>
