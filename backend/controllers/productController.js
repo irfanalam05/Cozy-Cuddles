@@ -1,3 +1,4 @@
+const pool = require('../config/database')
 const products = [
   {
     id: 1,

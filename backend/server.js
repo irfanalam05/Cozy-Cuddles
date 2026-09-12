@@ -4,11 +4,13 @@ require('dotenv').config()
 
 const app = express()
 const productRoutes = require('./routes/productRoutes')
+const adminRoutes = require('./routes/adminRoutes')
 
 // Middleware
 app.use(cors())
 app.use(express.json())
 app.use('/api/products', productRoutes)
+app.use('/api/admin', adminRoutes)
 
 // Test route
 app.get('/', (req, res) => {
