@@ -97,7 +97,7 @@ function App() {
 
   return (
     <div className="app">
-      {window.location.hash !== '#/YWRtaW5sb2dpbg==' && window.location.hash !== '#/YWRtaW5kYXNoYm9hcmQ=' && <Header />}
+      {window.location.hash !== '#/admin' && window.location.hash !== '#/admin/dashboard' && <Header />}
       {route.page === 'category' ? (
         <CategoryPage category={route.category} />
       ) : window.location.hash === '#wishlist' ? (
@@ -106,9 +106,9 @@ function App() {
         <Cart isPage />
       ) : window.location.hash === '#login' ? (
         <Login />
-      ) : window.location.hash === '#/YWRtaW5sb2dpbg==' ? (
+      ) : window.location.hash === '#/admin' ? (
         <AdminLogin />
-      ) : window.location.hash === '#/YWRtaW5kYXNoYm9hcmQ=' ? (
+      ) : window.location.hash === '#/admin/dashboard' ? (
         <AdminDashboard />
       ) : (
         <Home />

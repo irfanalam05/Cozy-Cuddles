@@ -23,11 +23,24 @@ const products = [
   }
 ]
 
-const getProducts = (req, res) => {
-  res.json({
-    success: true,
-    products
-  })
+const getProducts = async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM products ORDER BY id'
+    )
+
+    res.json({
+      success: true,
+      products: result.rows
+    })
+  } catch (error) {
+    console.error('Get products error:', error)
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch products'
+    })
+  }
 }
 
 module.exports = {
