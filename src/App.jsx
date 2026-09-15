@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import PromoBanner from './components/PromoBanner'
 import WhyChooseUs from './components/WhyChooseUs'
 import './App.css'
@@ -94,6 +95,21 @@ function Home() {
 
 function App() {
   const route = useHashRoute()
+  const [, setPath] = useState(window.location.pathname)
+  useEffect(() => {
+    const handlePopState = () => {
+      setPath(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+  const path = window.location.pathname
+  const isAdminRoute = path === '/admin' || path === '/admin/dashboard'
+  const isAdminAuthenticated = !!localStorage.getItem('adminToken')
 
   return (
     <div className="app">
@@ -106,10 +122,13 @@ function App() {
         <Cart isPage />
       ) : window.location.hash === '#login' ? (
         <Login />
-      ) : window.location.hash === '#/admin' ? (
+      ) : path === '/admin' ? (
         <AdminLogin />
-      ) : window.location.hash === '#/admin/dashboard' ? (
-        <AdminDashboard />
+      ) : path === '/admin/dashboard' ? (
+        isAdminAuthenticated ? <AdminDashboard /> : (() => {
+          window.history.replaceState({}, '', '/admin')
+          return <AdminLogin />
+        })()
       ) : (
         <Home />
       )}

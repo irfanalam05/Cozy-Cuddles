@@ -71,11 +71,13 @@ const loginAdmin = async (req, res) => {
     const otp = generateOTP()
     await saveOTP(admin.id, otp)
 
-    await transporter.sendMail({
+    transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: admin.email,
       subject: 'Cozy & Cuddles Admin OTP',
       text: `Your admin login OTP is ${otp}. It will expire in ${process.env.OTP_EXPIRES_MINUTES || 5} minutes.`,
+    }).catch((error) => {
+      console.error('OTP email error:', error)
     })
 
     const token = jwt.sign(

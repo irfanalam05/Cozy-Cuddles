@@ -58,7 +58,8 @@ function AdminLogin() {
             console.log(data)
             if (data.success) {
                 localStorage.setItem('adminToken', data.token)
-                window.location.hash = '#/admin/dashboard'
+                window.history.pushState({}, '', '/admin/dashboard')
+                window.dispatchEvent(new PopStateEvent('popstate'))
             }else {
                 setOtpError(data.message || 'Invalid or expired OTP')
             }

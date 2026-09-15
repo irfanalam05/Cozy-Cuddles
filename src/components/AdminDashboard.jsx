@@ -1,4 +1,21 @@
+import { useEffect } from 'react'
 function AdminDashboard() {
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken')
+
+    fetch('http://localhost:5000/api/admin/test', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('JWT test:', data)
+      })
+      .catch((error) => {
+        console.error('JWT test error:', error)
+      })
+  }, [])
   return (
     <div className="admin-dashboard">
       <aside className="admin-sidebar">
