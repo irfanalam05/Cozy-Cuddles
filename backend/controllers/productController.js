@@ -1,27 +1,59 @@
 const pool = require('../config/database')
-const products = [
-  {
-    id: 1,
-    name: 'Cute Baby Romper',
-    category: 'Clothing',
-    price: 599,
-    description: 'Soft and comfortable romper for babies.'
-  },
-  {
-    id: 2,
-    name: 'Baby Cotton Blanket',
-    category: 'Baby Care',
-    price: 799,
-    description: 'Soft cotton blanket for your little one.'
-  },
-  {
-    id: 3,
-    name: 'Plush Teddy Bear',
-    category: 'Toys',
-    price: 499,
-    description: 'Cute and cuddly teddy bear.'
+const createProduct = async (req, res) => {
+  try {
+    const {
+      name,
+      category,
+      description,
+      price,
+      sale_price,
+      stock,
+      sku,
+      images,
+      age_range,
+      features,
+      is_active,
+      is_bestseller,
+      is_new
+    } = req.body
+
+    const result = await pool.query(
+      `INSERT INTO products
+      (name, slug, category, description, price, sale_price, stock, sku, images, age_range, features, is_active, is_bestseller, is_new)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *`,
+      [
+        name,
+        name.toLowerCase().replace(/\s+/g, '-'),
+        category,
+        description,
+        price,
+        sale_price || null,
+        stock || 0,
+        sku,
+        images || null,
+        age_range || null,
+        features || [],
+        is_active ?? true,
+        is_bestseller ?? false,
+        is_new ?? false
+      ]
+    )
+
+    res.status(201).json({
+      success: true,
+      message: 'Product created successfully',
+      product: result.rows[0]
+    })
+  } catch (error) {
+    console.error('Create product error:', error)
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create product'
+    })
   }
-]
+}
 
 const getProducts = async (req, res) => {
   try {
@@ -44,5 +76,5 @@ const getProducts = async (req, res) => {
 }
 
 module.exports = {
-  getProducts
+  getProducts,createProduct
 }

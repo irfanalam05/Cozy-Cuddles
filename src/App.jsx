@@ -113,7 +113,7 @@ function App() {
 
   return (
     <div className="app">
-      {window.location.hash !== '#/admin' && window.location.hash !== '#/admin/dashboard' && <Header />}
+      {!isAdminRoute && <Header />}
       {route.page === 'category' ? (
         <CategoryPage category={route.category} />
       ) : window.location.hash === '#wishlist' ? (
@@ -132,7 +132,10 @@ function App() {
       ) : (
         <Home />
       )}
-      {window.location.hash !== '#wishlist' && window.location.hash !== '#cart' && <Footer />}
+      {!isAdminRoute &&
+      window.location.hash !== '#wishlist' &&
+      window.location.hash !== '#cart' &&
+      <Footer />}
     </div>
   )
 }

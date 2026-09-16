@@ -4157,6 +4157,7 @@ section.bg-deepblue {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  text-align: left;
   margin-bottom: 25px;
 }
 
@@ -4216,6 +4217,210 @@ section.bg-deepblue {
   line-height: 1.6;
 }
 
+/* Product Filters */
+
+.admin-product-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.admin-product-filters input,
+.admin-product-filters select {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--powder-blue);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--brown-dark);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+}
+
+.admin-product-filters input::placeholder {
+  color: var(--brown-muted);
+}
+
+.admin-product-filters input:focus,
+.admin-product-filters select:focus {
+  border-color: var(--powder-blue);
+  box-shadow: 0 0 0 3px rgba(181, 201, 212, 0.18);
+}
+
+/* Product Table */
+
+.admin-product-table {
+  margin-top: 25px;
+  overflow-x: auto;
+  border: 1px solid var(--powder-blue);
+  border-radius: 16px;
+}
+
+.admin-product-table-header, .admin-product-row {
+  display: grid;
+  grid-template-columns: 0.8fr 2fr 1.3fr 0.9fr 0.8fr 1fr 1.2fr;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 20px;
+}
+
+.admin-product-table-header {
+  background: var(--powder-blue);
+  color: var(--brown-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-product-row {
+  border-top: 1px solid var(--powder-blue);
+  background: var(--white);
+  color: var(--brown-muted);
+  font-size: 14px;
+}
+.admin-product-row img {
+  width: 55px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--powder-blue);
+}
+
+.admin-product-row:hover {
+  background: var(--cream);
+}
+
+.admin-product-row strong {
+  display: block;
+  color: var(--brown-dark);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.admin-product-row small {
+  color: var(--brown-muted);
+  font-size: 12px;
+}
+
+.admin-product-row > span:nth-child(5) {
+  color: #16805c;
+  font-weight: 600;
+}
+
+.admin-product-row > div:last-child {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-product-row > div:last-child button {
+  padding: 7px 11px;
+  border: none;
+  border-radius: 8px;
+  background: var(--powder-blue);
+  color: var(--brown-dark);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Add Product Form */
+
+.admin-content-heading:has(.admin-product-form) {
+  display: block;
+}
+
+.admin-content-heading:has(.admin-product-form) h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 38px;
+  color: var(--brown-dark);
+}
+
+.admin-product-form {
+  width: 100%;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-form-group label {
+  color: var(--brown-dark);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-form-group input,
+.admin-form-group select,
+.admin-form-group textarea {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--powder-blue);
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--brown-dark);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: 0.3s ease;
+}
+
+.admin-form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.admin-form-group input::placeholder,
+.admin-form-group textarea::placeholder {
+  color: var(--brown-muted);
+}
+
+.admin-form-group input:focus,
+.admin-form-group select:focus,
+.admin-form-group textarea:focus {
+  border-color: var(--powder-blue);
+  box-shadow: 0 0 0 3px rgba(181, 201, 212, 0.18);
+}
+
+.admin-form-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.admin-product-form > .admin-form-row:last-of-type {
+  grid-template-columns: 1fr 2fr;
+}
+
+.admin-product-form .admin-view-btn {
+  align-self: center;
+  margin-top: 5px;
+  padding: 12px 24px;
+}
+
+.admin-success-toast {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  padding: 14px 22px;
+  background: #dff5e8;
+  color: #16805c;
+  border: 1px solid #b8e6cc;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(63, 86, 107, 0.15);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+}
 /* Responsive */
 
 @media (max-width: 1000px) {
