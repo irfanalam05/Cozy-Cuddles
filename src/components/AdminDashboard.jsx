@@ -2,11 +2,25 @@ import { useEffect, useState } from 'react'
 function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('dashboard')
   const [products, setProducts] = useState([])
+  const [orders, setOrders] = useState([])
+  const [users, setUsers] = useState([])
+  const [selectedOrder, setSelectedOrder] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('All Categories')
   const [statusFilter, setStatusFilter] = useState('All Status')
   const [sortBy, setSortBy] = useState('Sort By')
+
+  const [orderSearchTerm, setOrderSearchTerm] = useState('')
+const [orderStatusFilter, setOrderStatusFilter] = useState('All Status')
+const [paymentFilter, setPaymentFilter] = useState('All Payments')
+const [orderSortBy, setOrderSortBy] = useState('Sort By')
+
+const [userSearchTerm, setUserSearchTerm] = useState('')
+const [userSortBy, setUserSortBy] = useState('Sort By')
+
   const [showSuccess, setShowSuccess] = useState(false)
+  const [editingProductId, setEditingProductId] = useState(null)
+  const [deleteProductId, setDeleteProductId] = useState(null)
   const [productForm, setProductForm] = useState({
     name: '',
     category: '',
@@ -17,15 +31,22 @@ function AdminDashboard() {
     description: '',
     images: '',
     age_range: '',
-    features: ''
+    features: '',
+    is_active: true
   })
 
   const handleAddProduct = async (e) => {
     e.preventDefault()
 
     try {
-      const response = await fetch('http://localhost:5000/api/products', {
-        method: 'POST',
+      const url = editingProductId
+        ? `http://localhost:5000/api/products/${editingProductId}`
+        : 'http://localhost:5000/api/products'
+
+      const method = editingProductId ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -42,15 +63,17 @@ function AdminDashboard() {
           features: productForm.features
             ? productForm.features.split(',').map((feature) => feature.trim())
             : [],
-          is_active: true,
+          is_active: productForm.is_active,
           is_bestseller: false,
           is_new: true,
         }),
       })
 
       const data = await response.json()
+
       if (data.success) {
         setShowSuccess(true)
+
         setTimeout(() => {
           setShowSuccess(false)
         }, 3000)
@@ -58,20 +81,84 @@ function AdminDashboard() {
         const productsResponse = await fetch(
           'http://localhost:5000/api/products'
         )
+
         const productsData = await productsResponse.json()
 
         if (productsData.success) {
           setProducts(productsData.products)
         }
 
+        setEditingProductId(null)
         setActiveSection('products')
       } else {
-        alert(data.message || 'Failed to add product')
+        alert(data.message || 'Failed to save product')
       }
 
-      console.log('Add Product:', data)
+      console.log('Product Save:', data)
     } catch (error) {
-      console.error('Add product error:', error)
+      console.error('Product save error:', error)
+    }
+  }
+
+  const handleDeleteProduct = async (productId) => {
+    setDeleteProductId(productId)
+  }
+
+  const handleUpdateOrderStatus = async (orderId, orderStatus) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            order_status: orderStatus
+          })
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update order status')
+      }
+
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.id === orderId
+            ? { ...order, order_status: data.order.order_status }
+            : order
+        )
+      )
+    } catch (error) {
+      console.error('Order status update error:', error)
+    }
+  }
+
+  const confirmDeleteProduct = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/products/${deleteProductId}`,
+        {
+          method: 'DELETE',
+        }
+      )
+
+      const data = await response.json()
+
+      if (data.success) {
+        setProducts((prevProducts) =>
+          prevProducts.filter((product) => product.id !== deleteProductId)
+        )
+
+        setDeleteProductId(null)
+      } else {
+        alert(data.message || 'Failed to delete product')
+      }
+    } catch (error) {
+      console.error('Delete product error:', error)
     }
   }
 
@@ -104,6 +191,30 @@ function AdminDashboard() {
       })
   }, [])
 
+  useEffect(() => {
+    fetch('http://localhost:5000/api/orders')
+      .then((response) => response.json())
+      .then((data) => {
+        setOrders(data.orders)
+        console.log('Orders:', data.orders)
+      })
+      .catch((error) => {
+        console.error('Orders fetch error:', error)
+      })
+  }, [])
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/users')
+      .then((response) => response.json())
+      .then((data) => {
+        setUsers(data.users)
+        console.log('Users:', data.users)
+      })
+      .catch((error) => {
+        console.error('Users fetch error:', error)
+      })
+  }, [])
+
   return (
     <div className="admin-dashboard">
       <aside className="admin-sidebar">
@@ -126,19 +237,18 @@ function AdminDashboard() {
             Products
           </button>
 
-          <button className="admin-nav-item">
+          <button className={`admin-nav-item ${activeSection === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveSection('orders')}
+            >
             <span className="material-symbols-outlined">shopping_bag</span>
             Orders
           </button>
 
-          <button className="admin-nav-item">
+          <button className={`admin-nav-item ${activeSection === 'users' ? 'active' : ''}`}
+            onClick={() => setActiveSection('users')}
+            >
             <span className="material-symbols-outlined">group</span>
             Users
-          </button>
-
-          <button className="admin-nav-item">
-            <span className="material-symbols-outlined">favorite</span>
-            Wishlist
           </button>
         </nav>
 
@@ -155,15 +265,16 @@ function AdminDashboard() {
               <div>
                 <p className="admin-tag">PRODUCT MANAGEMENT</p>
                 <h1>Products</h1>
-                <p>Add, edit or remove products from your store</p>
               </div>
 
               <button className="admin-view-btn" onClick={() => setActiveSection('add-product')}>
                 + Add Product
               </button>
             </div>
-            <div className="admin-stats">
-              <div className="admin-stat-card">
+            <div className="admin-product-cards">
+              <div className="admin-stat-card" onClick={() => setActiveSection('products')}
+                style={{ cursor: 'pointer' }}
+                >
                 <span className="material-symbols-outlined">inventory_2</span>
                 <p>Total Products</p>
                 <h2>{products.length}</h2>
@@ -274,14 +385,251 @@ function AdminDashboard() {
                   <span>{product.is_active ? 'In Stock' : 'Inactive'}</span>
 
                   <div>
-                    <button>Edit</button>
-                    <button>Delete</button>
+                    <button onClick={() => {
+                      setProductForm({
+                        name: product.name,
+                        category: product.category,
+                        price: product.price,
+                        sale_price: product.sale_price || '',
+                        stock: product.stock,
+                        sku: product.sku,
+                        description: product.description || '',
+                        images: product.images?.[0] || '',
+                        age_range: product.age_range || '',
+                        features: product.features?.join(', ') || '',
+                        is_active: product.is_active
+                      })
+                      setActiveSection('add-product')
+                      setEditingProductId(product.id)
+                    }}>
+                      Edit
+                    </button>
+                    <button onClick={() => handleDeleteProduct(product.id)}>
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {activeSection === 'orders' && (
+          <div className="admin-content-card">
+            <div className="admin-content-heading">
+              <div>
+                <p className="admin-tag">ORDER MANAGEMENT</p>
+                <h1>Orders</h1>
+              </div>
+            </div>
+
+            <div className="admin-order-filters">
+              <input
+                type="text"
+                placeholder="Search orders by ID, name or email..."
+                value={orderSearchTerm}
+                onChange={(e) => setOrderSearchTerm(e.target.value)}
+              />
+
+              <select
+                value={orderStatusFilter}
+                onChange={(e) => setOrderStatusFilter(e.target.value)}
+              >
+                <option>All Status</option>
+                <option>Confirmed</option>
+                <option>Processing</option>
+                <option>Shipped</option>
+                <option>Delivered</option>
+                <option>Cancelled</option>
+              </select>
+
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+              >
+                <option>All Payments</option>
+                <option>Pending</option>
+                <option>Paid</option>
+              </select>
+
+              <select
+                value={orderSortBy}
+                onChange={(e) => setOrderSortBy(e.target.value)}
+              >
+                <option>Sort By</option>
+                <option>Newest</option>
+                <option>Oldest</option>
+                <option>Amount</option>
+              </select>
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="admin-empty-state">
+                <span className="material-symbols-outlined">
+                  shopping_bag
+                </span>
+                <h3>No orders yet</h3>
+                <p>
+                  Customer orders will appear here once they are placed.
+                </p>
+              </div>
+            ) : (
+              <div className="admin-orders-list">
+                {orders
+                  .filter((order) =>
+                    (
+                      order.id.toString().includes(orderSearchTerm.toLowerCase()) ||
+                      order.customer_name.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                      (order.customer_email || '').toLowerCase().includes(orderSearchTerm.toLowerCase())
+                    ) &&
+                    (
+                      orderStatusFilter === 'All Status' ||
+                      order.order_status === orderStatusFilter
+                    ) &&
+                    (
+                      paymentFilter === 'All Payments' ||
+                      order.payment_status === paymentFilter
+                    )
+                  )
+                  .sort((a, b) => {
+                    if (orderSortBy === 'Newest') {
+                      return new Date(b.created_at) - new Date(a.created_at)
+                    }
+
+                    if (orderSortBy === 'Oldest') {
+                      return new Date(a.created_at) - new Date(b.created_at)
+                    }
+
+                    if (orderSortBy === 'Amount') {
+                      return Number(b.total_amount) - Number(a.total_amount)
+                    }
+
+                    return 0
+                  })
+                .map((order) => (
+                  <div className="admin-order-row" key={order.id}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    <div>
+                      <strong>Order #{order.id}</strong>
+                      <small>{order.customer_name}</small>
+                    </div>
+
+                    <div>
+                      <small>Email</small>
+                      <span>{order.customer_email || 'N/A'}</span>
+                    </div>
+
+                    <div>
+                      <small>Total</small>
+                      <span>₹{order.total_amount}</span>
+                    </div>
+
+                    <div>
+                      <small>Payment</small>
+                      <span>{order.payment_status}</span>
+                    </div>
+
+                    <div>
+                      <small>Status</small>
+                      <span>{order.order_status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'users' && (
+          <div className="admin-content-card">
+            <div className="admin-content-heading">
+              <div>
+                <p className="admin-tag">USER MANAGEMENT</p>
+                <h1>Users</h1>
+              </div>
+            </div>
+
+            <div className="admin-user-filters">
+              <input
+                type="text"
+                placeholder="Search users by name, email or phone..."
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+              />
+
+              <select
+                value={userSortBy}
+                onChange={(e) => setUserSortBy(e.target.value)}
+              >
+                <option>Sort By</option>
+                <option>Name</option>
+                <option>Newest</option>
+                <option>Oldest</option>
+              </select>
+            </div>
+
+            {users.length === 0 ? (
+              <div className="admin-empty-state">
+                <span className="material-symbols-outlined">
+                  group
+                </span>
+                <h3>No users yet</h3>
+                <p>
+                  Registered customers will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="admin-users-list">
+                {users
+                  .filter((user) =>
+                    user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                    user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                    (user.phone || '').toLowerCase().includes(userSearchTerm.toLowerCase())
+                  )
+                  .sort((a, b) => {
+                    if (userSortBy === 'Name') {
+                      return a.name.localeCompare(b.name)
+                    }
+
+                    if (userSortBy === 'Newest') {
+                      return new Date(b.created_at) - new Date(a.created_at)
+                    }
+
+                    if (userSortBy === 'Oldest') {
+                      return new Date(a.created_at) - new Date(b.created_at)
+                    }
+
+                    return 0
+                  })
+                .map((user) => (
+                  <div className="admin-user-row" key={user.id}>
+                    <div>
+                      <strong>{user.name}</strong>
+                      <small>User #{user.id}</small>
+                    </div>
+
+                    <div>
+                      <small>Email</small>
+                      <span>{user.email}</span>
+                    </div>
+
+                    <div>
+                      <small>Phone</small>
+                      <span>{user.phone || 'N/A'}</span>
+                    </div>
+
+                    <div>
+                      <small>Address</small>
+                      <span>{user.address || 'N/A'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeSection === 'dashboard' && ( <>
           <header className="admin-header">
             <div>
@@ -299,58 +647,174 @@ function AdminDashboard() {
           </header>
 
           <section className="admin-stats">
-            <div className="admin-stat-card">
+           <div className="admin-stat-card" onClick={() => setActiveSection('products')}
+              style={{ cursor: 'pointer' }}
+              >
               <span className="material-symbols-outlined">inventory_2</span>
               <p>Total Products</p>
               <h2>{products.length}</h2>
             </div>
 
-            <div className="admin-stat-card">
-              <span className="material-symbols-outlined">group</span>
-              <p>Total Users</p>
-              <h2>126</h2>
+            <div className="admin-stat-card" onClick={() => setActiveSection('users')}
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="material-symbols-outlined">group</span>
+                <p>Total Users</p>
+                <h2>{users.length}</h2>
             </div>
 
-            <div className="admin-stat-card">
+            <div className="admin-stat-card" onClick={() => setActiveSection('orders')}
+              style={{ cursor: 'pointer' }}
+            >
               <span className="material-symbols-outlined">shopping_bag</span>
               <p>Total Orders</p>
-              <h2>84</h2>
+              <h2>{orders.length}</h2>
             </div>
 
             <div className="admin-stat-card">
               <span className="material-symbols-outlined">payments</span>
               <p>Total Revenue</p>
-              <h2>₹42,850</h2>
+              <h2> ₹{orders.reduce(
+                  (total, order) => total + Number(order.total_amount),
+                  0
+                ).toLocaleString('en-IN')}
+              </h2>
+            </div>
+            <div className="admin-stat-card">
+              <span className="material-symbols-outlined">pending</span>
+              <p>Pending Payment</p>
+              <h2>
+                ₹{orders
+                  .filter((order) => order.payment_status === 'Pending')
+                  .reduce(
+                    (total, order) => total + Number(order.total_amount),
+                    0
+                  )
+                  .toLocaleString('en-IN')}
+              </h2>
+            </div>
+            <div className="admin-stat-card" onClick={() => setActiveSection('orders')}
+                style={{ cursor: 'pointer' }}
+              >
+              <span className="material-symbols-outlined">pending_actions</span>
+              <p>Pending Orders</p>
+              <h2>
+                {orders.filter(
+                  (order) =>
+                    order.order_status !== 'Shipped' &&
+                    order.order_status !== 'Delivered' &&
+                    order.order_status !== 'Cancelled'
+                ).length}
+              </h2>
             </div>
           </section>
           </>
         )}
-        {activeSection === 'dashboard' && (
-          <>
-          <section className="admin-content-card">
-            <div className="admin-content-heading">
-              <div>
-                <p className="admin-tag">STORE OVERVIEW</p>
-                <h2>Recent Orders</h2>
+
+        {selectedOrder && (
+          <div className="admin-order-modal-overlay">
+            <div className="admin-order-modal">
+              <div className="admin-order-modal-header">
+                <div>
+                  <p className="admin-tag">ORDER DETAILS</p>
+                  <h2>Order #{selectedOrder.id}</h2>
+                </div>
+
+                <button
+                  className="admin-order-modal-close"
+                  onClick={() => setSelectedOrder(null)}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
               </div>
 
-              <button className="admin-view-btn">
-                View All →
-              </button>
-            </div>
+              <div className="admin-order-details">
+                <div>
+                  <small>Customer Name</small>
+                  <strong>{selectedOrder.customer_name}</strong>
+                </div>
 
-            <div className="admin-empty-state">
-              <span className="material-symbols-outlined">
-                shopping_bag
-              </span>
-              <h3>Orders will appear here</h3>
-              <p>
-                Once customers start placing orders, you'll see
-                them here.
-              </p>
+                <div>
+                  <small>Email</small>
+                  <strong>{selectedOrder.customer_email || 'N/A'}</strong>
+                </div>
+
+                <div>
+                  <small>Phone</small>
+                  <strong>{selectedOrder.customer_phone || 'N/A'}</strong>
+                </div>
+
+                <div>
+                  <small>Total Amount</small>
+                  <strong>₹{selectedOrder.total_amount}</strong>
+                </div>
+
+                <div>
+                  <small>Payment Status</small>
+                  <strong>{selectedOrder.payment_status}</strong>
+                </div>
+
+                <div>
+                  <small>Order Status</small>
+                  <select
+                    value={selectedOrder.order_status}
+                    onChange={(e) => {
+                      setSelectedOrder({
+                        ...selectedOrder,
+                        order_status: e.target.value
+                      })
+                    }}
+                    className="admin-order-status-select"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div className="admin-order-address">
+                  <small>Shipping Address</small>
+                  <strong>{selectedOrder.shipping_address || 'N/A'}</strong>
+                </div>
+              </div>
+
+              <div className="admin-order-modal-products">
+                <h3>Ordered Products</h3>
+
+                {selectedOrder.items?.map((item) => (
+                  <div className="admin-order-modal-item" key={item.id}>
+                    <div>
+                      <strong>{item.product_name}</strong>
+                      <small>Quantity: {item.quantity}</small>
+                    </div>
+
+                    <span>
+                      ₹{item.price} × {item.quantity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="admin-order-modal-footer">
+                <strong>Total: ₹{selectedOrder.total_amount}</strong>
+
+                <button className="admin-btn-secondary" onClick={async () => {
+                      await handleUpdateOrderStatus(
+                        selectedOrder.id,
+                        selectedOrder.order_status
+                      )
+
+                      setSelectedOrder(null)
+                    }}
+                  >
+                    Save
+                </button>
+              </div>
             </div>
-          </section>
-          </>
+          </div>
         )}
 
         {activeSection === 'add-product' && (
@@ -359,7 +823,7 @@ function AdminDashboard() {
             <div className="admin-content-heading">
               <div>
                 <p className="admin-tag">PRODUCT MANAGEMENT</p>
-                <h1>Add Product</h1>
+                <h1>{editingProductId ? 'Edit Product' : 'Add Product'}</h1>
                 <p>Add a new product to your Cozy & Cuddles store</p>
               </div>
             </div>
@@ -454,6 +918,22 @@ function AdminDashboard() {
               </div>
 
               <div className="admin-form-group">
+                <label>Product Status</label>
+                <select
+                  value={productForm.is_active ? 'true' : 'false'}
+                  onChange={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      is_active: e.target.value === 'true'
+                    })
+                  }
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+
+              <div className="admin-form-group">
                 <label>Description</label>
                 <textarea placeholder="Enter product description" rows="5" value={productForm.description}
                   onChange={(e) =>
@@ -505,10 +985,29 @@ function AdminDashboard() {
 
               </div>
               <button type="submit" className="admin-view-btn">
-                Add Product
+                {editingProductId ? 'Update Product' : 'Add Product'}
               </button>
             </form>
 
+          </div>
+        )}
+
+        {deleteProductId && (
+          <div className="delete-modal-overlay">
+            <div className="delete-modal">
+              <h3>Delete Product?</h3>
+              <p>Are you sure you want to delete this product?</p>
+
+              <div className="delete-modal-actions">
+                <button onClick={() => setDeleteProductId(null)}>
+                  Cancel
+                </button>
+
+                <button onClick={confirmDeleteProduct}>
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
