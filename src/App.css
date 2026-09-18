@@ -4417,21 +4417,28 @@ section.bg-deepblue {
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  padding-top: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .admin-order-modal {
   width: 100%;
   max-width: 750px;
-  max-height: 90vh;
+  height: auto;
+  max-height: calc(100vh - 40px);
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--white);
   border-radius: 18px;
   padding: 28px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 }
 
 .admin-order-modal-header {
@@ -4541,6 +4548,121 @@ section.bg-deepblue {
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+/* Inventory Manage Modal */
+.inventory-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.inventory-modal {
+  width: 100%;
+  max-width: 520px;
+  background: var(--white);
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+}
+
+.inventory-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+.inventory-modal-header h2 {
+  margin: 5px 0 0;
+  color: var(--brown-dark);
+}
+
+.inventory-modal-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--brown-dark);
+  font-size: 20px;
+}
+
+.inventory-action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.inventory-action-buttons button {
+  flex: 1;
+  padding: 11px 15px;
+  border: 1px solid var(--powder-blue);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--brown-dark);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+.inventory-action-buttons button:hover {
+  background: var(--cream);
+}
+
+.inventory-action-buttons button.active {
+  background: var(--powder-blue);
+  border-color: var(--powder-blue);
+  color: var(--brown-dark);
+}
+
+.inventory-action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.inventory-action-buttons button {
+  flex: 1;
+  padding: 11px 15px;
+  border: 1px solid var(--powder-blue);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--brown-dark);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+.inventory-action-buttons button:hover {
+  background: var(--cream);
+}
+
+.inventory-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.inventory-modal-footer button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--powder-blue);
+  color: var(--brown-dark);
+  cursor: pointer;
+  font-weight: 600;
 }
 
 /* Users */
@@ -4844,4 +4966,176 @@ section.bg-deepblue {
 .admin-user-filters input:focus,
 .admin-user-filters select:focus {
   border-color: var(--brown-dark);
+}
+
+/* ========================================
+   REVENUE ANALYTICS
+======================================== */
+
+.admin-revenue-analytics {
+  margin-top: 30px;
+  padding: 25px;
+  background: var(--white);
+  border: 1px solid var(--powder-blue);
+  border-radius: 16px;
+}
+
+.admin-revenue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.admin-revenue-header h2 {
+  margin: 5px 0 0;
+  font-size: 24px;
+  color: var(--brown-dark);
+}
+
+.admin-revenue-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.admin-revenue-filters select {
+  padding: 10px 14px;
+  border: 1px solid var(--powder-blue);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--brown-dark);
+  font-size: 13px;
+  outline: none;
+}
+
+.admin-revenue-filters select:focus {
+  border-color: var(--brown-dark);
+}
+
+.admin-revenue-chart {
+  width: 100%;
+  height: 320px;
+}
+
+/* ========================================
+   RECENT ORDERS
+======================================== */
+
+.admin-recent-orders {
+  margin-top: 30px;
+  padding: 25px;
+  background: var(--white);
+  border: 1px solid var(--powder-blue);
+  border-radius: 16px;
+}
+
+.admin-recent-orders-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.admin-recent-orders-header h2 {
+  margin: 5px 0 0;
+  font-size: 24px;
+  color: var(--brown-dark);
+}
+
+.admin-recent-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-recent-order-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--powder-blue);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-recent-order-row:hover {
+  background: #f9faf9;
+  transform: translateY(-1px);
+}
+
+.admin-recent-order-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-recent-order-row strong {
+  font-size: 14px;
+  color: var(--brown-dark);
+}
+
+.admin-recent-order-row span {
+  font-size: 14px;
+  color: var(--brown-dark);
+}
+
+.admin-recent-order-row small {
+  font-size: 12px;
+  color: var(--brown-light);
+}
+
+.admin-recent-empty {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--brown-light);
+}
+
+.admin-recent-empty .material-symbols-outlined {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.admin-recent-empty p {
+  margin: 0;
+}
+
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px !important;
+  font-weight: 600;
+}
+
+.admin-status-badge.paid {
+  background: #dff5ec;
+  color: #2f7d61;
+}
+
+.admin-status-badge.pending {
+  background: #fff1d6;
+  color: #a56b00;
+}
+
+.admin-status-badge.confirmed {
+  background: #e8edf5;
+  color: #4A5568;
+}
+
+.admin-status-badge.processing {
+  background: #e8f5f1;
+  color: #367c68;
+}
+
+.admin-status-badge.shipped {
+  background: #e9e5f7;
+  color: #65558f;
 }

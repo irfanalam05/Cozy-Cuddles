@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { ResponsiveContainer, AreaChart,Area, CartesianGrid, XAxis, YAxis,Tooltip} from 'recharts'
 function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('dashboard')
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
   const [users, setUsers] = useState([])
+
+  const [inventory, setInventory] = useState([])
+  const [inventoryModalOpen, setInventoryModalOpen] = useState(false)
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState(null)
+  const [inventoryAction, setInventoryAction] = useState('add')
+  const [inventoryQuantity, setInventoryQuantity] = useState('')
+  const [inventoryNote, setInventoryNote] = useState('')
+  const [inventoryLogs, setInventoryLogs] = useState([])
+
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('All Categories')
@@ -17,6 +28,9 @@ const [orderSortBy, setOrderSortBy] = useState('Sort By')
 
 const [userSearchTerm, setUserSearchTerm] = useState('')
 const [userSortBy, setUserSortBy] = useState('Sort By')
+
+const [revenuePeriod, setRevenuePeriod] = useState('Monthly')
+const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
 
   const [showSuccess, setShowSuccess] = useState(false)
   const [editingProductId, setEditingProductId] = useState(null)
@@ -34,6 +48,63 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
     features: '',
     is_active: true
   })
+
+  const revenueYears = [
+    ...new Set(
+      orders.map((order) => new Date(order.created_at).getFullYear())
+    )
+  ].sort((a, b) => b - a)
+
+  const revenueChartData =
+    revenuePeriod === 'Monthly'
+      ? Array.from({ length: 12 }, (_, index) => ({
+          label: new Date(0, index).toLocaleString('en-US', {
+            month: 'short'
+          }),
+          revenue: orders
+            .filter((order) => {
+              const date = new Date(order.created_at)
+
+              return (
+                date.getFullYear() === Number(revenueYear) &&
+                date.getMonth() === index
+              )
+            })
+            .reduce(
+              (sum, order) => sum + Number(order.total_amount),
+              0
+            )
+        }))
+      : revenuePeriod === 'Quarterly'
+      ? [1, 2, 3, 4].map((quarter) => ({
+          label: `Q${quarter}`,
+          revenue: orders
+            .filter((order) => {
+              const date = new Date(order.created_at)
+              const orderQuarter = Math.floor(date.getMonth() / 3) + 1
+
+              return (
+                date.getFullYear() === Number(revenueYear) &&
+                orderQuarter === quarter
+              )
+            })
+            .reduce(
+              (sum, order) => sum + Number(order.total_amount),
+              0
+            )
+        }))
+      : revenueYears.map((year) => ({
+          label: year.toString(),
+          revenue: orders
+            .filter(
+              (order) =>
+                new Date(order.created_at).getFullYear() === Number(year)
+            )
+            .reduce(
+              (sum, order) => sum + Number(order.total_amount),
+              0
+            )
+      }))
 
   const handleAddProduct = async (e) => {
     e.preventDefault()
@@ -137,6 +208,67 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
     }
   }
 
+  const handleUpdateInventoryStock = async () => {
+    if (!selectedInventoryItem) return
+
+    if (inventoryQuantity === '') {
+      alert('Please enter a quantity')
+      return
+    }
+
+    const quantity = Number(inventoryQuantity)
+
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      alert('Please enter a valid quantity')
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/inventory/${selectedInventoryItem.id}/stock`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: inventoryAction,
+            quantity,
+            note: inventoryNote
+          })
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update stock')
+      }
+
+      setInventory((prevInventory) =>
+        prevInventory.map((item) =>
+          item.id === selectedInventoryItem.id
+            ? { ...item, stock: data.stock }
+            : item
+        )
+      )
+
+      setSelectedInventoryItem((prev) => ({
+        ...prev,
+        stock: data.stock
+      }))
+
+      setInventoryQuantity('')
+      setInventoryNote('')
+      setInventoryModalOpen(false)
+
+      alert('Stock updated successfully')
+    } catch (error) {
+      console.error('Inventory update error:', error)
+      alert(error.message || 'Failed to update stock')
+    }
+  }
+
   const confirmDeleteProduct = async () => {
     try {
       const response = await fetch(
@@ -215,6 +347,30 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
       })
   }, [])
 
+  useEffect(() => {
+    fetch('http://localhost:5000/api/inventory')
+      .then((response) => response.json())
+      .then((data) => {
+        setInventory(data.inventory)
+        console.log('Inventory:', data.inventory)
+      })
+      .catch((error) => {
+        console.error('Inventory fetch error:', error)
+      })
+  }, [])
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/inventory/logs')
+      .then((response) => response.json())
+      .then((data) => {
+        setInventoryLogs(data.logs)
+        console.log('Inventory Logs:', data.logs)
+      })
+      .catch((error) => {
+        console.error('Inventory logs fetch error:', error)
+      })
+  }, [])
+
   return (
     <div className="admin-dashboard">
       <aside className="admin-sidebar">
@@ -232,14 +388,21 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
 
           <button className={`admin-nav-item ${activeSection === 'products' ? 'active' : ''}`}
             onClick={() => setActiveSection('products')}
-            >
+          >
             <span className="material-symbols-outlined">inventory_2</span>
             Products
           </button>
 
+          <button className={`admin-nav-item ${activeSection === 'inventory' ? 'active' : ''}`}
+            onClick={() => setActiveSection('inventory')}
+          >
+            <span className="material-symbols-outlined">warehouse</span>
+            Inventory
+          </button>
+
           <button className={`admin-nav-item ${activeSection === 'orders' ? 'active' : ''}`}
             onClick={() => setActiveSection('orders')}
-            >
+          >
             <span className="material-symbols-outlined">shopping_bag</span>
             Orders
           </button>
@@ -630,6 +793,190 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
           </div>
         )}
 
+        {activeSection === 'inventory' && (
+          <div className="admin-content-card">
+            <div className="admin-content-heading">
+              <div>
+                <p className="admin-tag"><h1>INVENTORY MANAGEMENT</h1></p>
+                <p>Manage product stock and inventory levels</p>
+              </div>
+            </div>
+
+            <div className="admin-product-table">
+              <div className="admin-product-table-header">
+                <span>Product</span>
+                <span>SKU</span>
+                <span>Current Stock</span>
+                <span>Status</span>
+                <span>Manage</span>
+              </div>
+
+              {inventory.map((item) => (
+                <div className="admin-product-row" key={item.id}>
+                  <div>
+                    <strong>{item.name}</strong>
+                  </div>
+
+                  <span>#{item.sku}</span>
+
+                  <span>{item.stock}</span>
+
+                  <span>
+                    {item.stock === 0
+                      ? 'Out of Stock'
+                      : item.stock <= 5
+                      ? 'Low Stock'
+                      : 'In Stock'}
+                  </span>
+
+                  <div>
+                    <button
+                      onClick={() => {
+                        setSelectedInventoryItem(item)
+                        setInventoryAction('add')
+                        setInventoryQuantity('')
+                        setInventoryNote('')
+                        setInventoryModalOpen(true)
+                      }}
+                    >
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="inventory-history">
+                <div className="admin-content-heading">
+                  <div>
+                    <p className="admin-tag">INVENTORY HISTORY</p>
+                    <h2>Stock Movement History</h2>
+                    <p>Track all stock additions, orders and cancellations</p>
+                  </div>
+                </div>
+
+                <div className="admin-product-table">
+                  <div className="admin-product-table-header">
+                    <span>Product</span>
+                    <span>Action</span>
+                    <span>Change</span>
+                    <span>Previous Stock</span>
+                    <span>New Stock</span>
+                    <span>Note</span>
+                  </div>
+
+                  {inventoryLogs.map((log) => (
+                    <div className="admin-product-row" key={log.id}>
+                      <div>
+                        <strong>{log.product_name}</strong>
+                        <small>#{log.sku}</small>
+                      </div>
+
+                      <span>{log.change_type}</span>
+
+                      <span>
+                        {log.quantity > 0 ? '+' : ''}
+                        {log.quantity}
+                      </span>
+
+                      <span>{log.previous_stock}</span>
+
+                      <span>{log.new_stock}</span>
+
+                      <span>{log.note || 'N/A'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {inventoryModalOpen && selectedInventoryItem && (
+          <div className="inventory-modal-overlay">
+            <div className="inventory-modal">
+              <div className="inventory-modal-header">
+                <div>
+                  <p className="admin-tag">INVENTORY MANAGEMENT</p>
+                  <h2>{selectedInventoryItem.name}</h2>
+                  <p>
+                    Current Stock: {selectedInventoryItem.stock}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setInventoryModalOpen(false)}
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className="inventory-modal-body">
+                <div className="inventory-action-buttons">
+                  <button
+                    type="button"
+                    className={inventoryAction === 'add' ? 'active' : ''}
+                    onClick={() => setInventoryAction('add')}
+                  >
+                    Add Stock
+                  </button>
+
+                  <button
+                    type="button"
+                    className={inventoryAction === 'set' ? 'active' : ''}
+                    onClick={() => setInventoryAction('set')}
+                  >
+                    Set Stock
+                  </button>
+                </div>
+
+                <div className="admin-form-group">
+                  <label>
+                    {inventoryAction === 'add'
+                      ? 'Quantity to Add'
+                      : 'New Stock Quantity'}
+                  </label>
+
+                  <input
+                    type="number"
+                    min="0"
+                    value={inventoryQuantity}
+                    onChange={(e) => setInventoryQuantity(e.target.value)}
+                    placeholder={
+                      inventoryAction === 'add'
+                        ? 'Enter quantity to add'
+                        : 'Enter new stock quantity'
+                    }
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Note</label>
+
+                  <textarea
+                    rows="3"
+                    value={inventoryNote}
+                    onChange={(e) => setInventoryNote(e.target.value)}
+                    placeholder="Optional note"
+                  />
+                </div>
+              </div>
+
+              <div className="inventory-modal-footer">
+                <button
+                  type="button"
+                  onClick={() => setInventoryModalOpen(false)}
+                >
+                  Cancel
+                </button>
+
+                <button type="button" onClick={handleUpdateInventoryStock}>
+                  Update Stock
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeSection === 'dashboard' && ( <>
           <header className="admin-header">
             <div>
@@ -708,10 +1055,166 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
               </h2>
             </div>
           </section>
+
+          <div className="admin-revenue-analytics">
+          <div className="admin-revenue-header">
+            <div>
+              <p className="admin-tag">REVENUE ANALYTICS</p>
+              <h2>Revenue Overview</h2>
+            </div>
+
+            <div className="admin-revenue-filters">
+              <select
+                value={revenuePeriod}
+                onChange={(e) => setRevenuePeriod(e.target.value)}
+              >
+                <option>Monthly</option>
+                <option>Quarterly</option>
+                <option>Yearly</option>
+              </select>
+
+              <select
+                value={revenueYear}
+                onChange={(e) => setRevenueYear(e.target.value)}
+              >
+                {revenueYears.length > 0 ? (
+                  revenueYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))
+                ) : (
+                  <option value={new Date().getFullYear()}>
+                    {new Date().getFullYear()}
+                  </option>
+                )}
+              </select>
+            </div>
+          </div>
+            <div className="admin-revenue-chart">
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={revenueChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value) => [
+                      `₹${Number(value).toLocaleString('en-IN')}`,
+                      'Revenue'
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#4A5568"
+                    fill="#A3D9C9"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div className="admin-recent-orders">
+            <div className="admin-recent-orders-header">
+              <div>
+                <p className="admin-tag">ORDER ACTIVITY</p>
+                <h2>Recent Orders</h2>
+              </div>
+
+              <button
+                className="admin-view-btn"
+                onClick={() => setActiveSection('orders')}
+              >
+                View All
+              </button>
+            </div>
+
+            {orders.filter(
+              (order) =>
+                order.order_status !== 'Shipped' &&
+                order.order_status !== 'Delivered' &&
+                order.order_status !== 'Cancelled'
+            ).length === 0 ? (
+              <div className="admin-recent-empty">
+                <span className="material-symbols-outlined">
+                  shopping_bag
+                </span>
+                <p>No active orders</p>
+              </div>
+            ) : (
+              <div className="admin-recent-orders-list">
+                {orders
+                  .filter(
+                    (order) =>
+                      order.order_status !== 'Shipped' &&
+                      order.order_status !== 'Delivered' &&
+                      order.order_status !== 'Cancelled'
+                  )
+                  .sort(
+                    (a, b) =>
+                      new Date(b.created_at) - new Date(a.created_at)
+                  )
+                  .slice(0, 5)
+                  .map((order) => (
+                    <div
+                      className="admin-recent-order-row"
+                      key={order.id}
+                      onClick={() => {
+                        window.scrollTo({
+                          top: 0,
+                          behavior: 'smooth'
+                        })
+                        setSelectedOrder(order)
+                      }}
+                    >
+                      <div>
+                        <strong>Order #{order.id}</strong>
+                        <small>{order.customer_name}</small>
+                      </div>
+
+                      <div>
+                        <small>Total</small>
+                        <span>
+                          ₹{Number(order.total_amount).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+
+                      <div>
+                        <small>Payment</small>
+                        <span
+                          className={`admin-status-badge ${
+                            order.payment_status === 'Paid' ? 'paid' : 'pending'
+                          }`}
+                        >
+                          {order.payment_status}
+                        </span>
+                      </div>
+
+                      <div>
+                        <small>Status</small>
+                        <span
+                          className={`admin-status-badge ${
+                            order.order_status === 'Shipped'
+                              ? 'shipped'
+                              : order.order_status === 'Processing'
+                              ? 'processing'
+                              : 'confirmed'
+                          }`}
+                        >
+                          {order.order_status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
           </>
         )}
 
-        {selectedOrder && (
+        {selectedOrder && 
+        createPortal(
+        (
           <div className="admin-order-modal-overlay">
             <div className="admin-order-modal">
               <div className="admin-order-modal-header">
@@ -766,7 +1269,6 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
                     }}
                     className="admin-order-status-select"
                   >
-                    <option value="Pending">Pending</option>
                     <option value="Confirmed">Confirmed</option>
                     <option value="Processing">Processing</option>
                     <option value="Shipped">Shipped</option>
@@ -815,6 +1317,8 @@ const [userSortBy, setUserSortBy] = useState('Sort By')
               </div>
             </div>
           </div>
+          ),
+          document.body
         )}
 
         {activeSection === 'add-product' && (
