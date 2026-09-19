@@ -1,4 +1,5 @@
 const pool = require('../config/database')
+const { sendOrderStatusEmail } = require('../services/orderEmailService')
 
 const getOrders = async (req, res) => {
   try {
@@ -140,6 +141,10 @@ const updateOrderStatus = async (req, res) => {
     )
 
     await client.query('COMMIT')
+    
+    if (currentStatus !== order_status) {
+    await sendOrderStatusEmail(result.rows[0], order_status)
+  }
 
     res.json({
       success: true,
