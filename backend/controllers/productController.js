@@ -1,39 +1,72 @@
 const pool = require('../config/database')
 const createProduct = async (req, res) => {
   try {
-    const {
-      name,
-      category,
-      description,
-      price,
-      sale_price,
-      stock,
-      sku,
-      images,
-      age_range,
-      features,
-      is_active,
-      is_bestseller,
-      is_new
-    } = req.body
+  const {
+    name,
+    category,
+    product_type,
+    description,
+    price,
+    sale_price,
+    stock,
+    sku,
+    age_range,
+    features,
+    is_active,
+    is_bestseller,
+    is_new
+} = req.body
+
+const categoryFolderMap = {
+  'Mosquito Beds': 'mosquito-bed',
+  'Baby Playgyms': 'baby-playgyms',
+  'Baby Tricycle': 'baby-tricycles',
+  'Baby Bullets': 'baby-bullets',
+  'Baby Walker': 'baby-walkers',
+  'Ride On Toys': 'ride-on-toys',
+  'Swings': 'swings',
+  'Sleeping Bags': 'sleeping-bags',
+  'Sleeping Swings': 'sleeping-swings'
+}
+
+const categoryFolder =
+  categoryFolderMap[category] ||
+  category.toLowerCase().replace(/\s+/g, '-')
+
+const productFolder = product_type
+  .toLowerCase()
+  .replace(/\s+/g, '-')
+
+const images = req.files
+  ? req.files.map(
+      (file) =>
+        `/products/${categoryFolder}/${productFolder}/${file.filename}`
+    )
+  : []
+
+const parsedFeatures = features
+  ? features.split(',').map((feature) => feature.trim())
+  : []
+
 
     const result = await pool.query(
       `INSERT INTO products
-      (name, slug, category, description, price, sale_price, stock, sku, images, age_range, features, is_active, is_bestseller, is_new)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      (name, slug, category, product_type, description, price, sale_price, stock, sku, images, age_range, features, is_active, is_bestseller, is_new)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *`,
       [
         name,
         name.toLowerCase().replace(/\s+/g, '-'),
         category,
+        product_type,
         description,
         price,
         sale_price || null,
         stock || 0,
         sku,
-        images || null,
+        images,
         age_range || null,
-        features || [],
+        parsedFeatures,
         is_active ?? true,
         is_bestseller ?? false,
         is_new ?? false
@@ -80,44 +113,86 @@ const updateProduct = async (req, res) => {
     const { id } = req.params
 
     const {
-      name,
-      category,
-      description,
-      price,
-      sale_price,
-      stock,
-      sku,
-      images,
-      age_range,
-      features,
-      is_active,
-      is_bestseller,
-      is_new
+        name,
+        category,
+        product_type,
+        description,
+        price,
+        sale_price,
+        stock,
+        sku,
+        age_range,
+        features,
+        is_active,
+        is_bestseller,
+        is_new
     } = req.body
+
+    const existingProduct = await pool.query(
+      'SELECT images FROM products WHERE id = $1',
+      [id]
+    )
+
+    const existingImages = existingProduct.rows[0]?.images || []
+
+    const categoryFolderMap = {
+      'Mosquito Beds': 'mosquito-bed',
+      'Baby Playgyms': 'baby-playgyms',
+      'Baby Tricycle': 'baby-tricycles',
+      'Baby Bullets': 'baby-bullets',
+      'Baby Walker': 'baby-walkers',
+      'Ride On Toys': 'ride-on-toys',
+      'Swings': 'swings',
+      'Sleeping Bags': 'sleeping-bags',
+      'Sleeping Swings': 'sleeping-swings'
+    }
+
+    const categoryFolder =
+      categoryFolderMap[category] ||
+      category.toLowerCase().replace(/\s+/g, '-')
+
+    const productFolder = product_type
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+
+    const newImages = req.files
+      ? req.files.map(
+          (file) =>
+            `/products/${categoryFolder}/${productFolder}/${file.filename}`
+        )
+      : []
+
+    const images = [...existingImages, ...newImages]
+
+    const parsedFeatures = features
+      ? features.split(',').map((feature) => feature.trim())
+      : []
 
     const result = await pool.query(
       `UPDATE products
        SET name = $1,
-           slug = $2,
-           category = $3,
-           description = $4,
-           price = $5,
-           sale_price = $6,
-           stock = $7,
-           sku = $8,
-           images = $9,
-           age_range = $10,
-           features = $11,
-           is_active = $12,
-           is_bestseller = $13,
-           is_new = $14,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $15
+          slug = $2,
+          category = $3,
+          product_type = $4,
+          description = $5,
+          price = $6,
+          sale_price = $7,
+          stock = $8,
+          sku = $9,
+          images = $10,
+          age_range = $11,
+          features = $12,
+          is_active = $13,
+          is_bestseller = $14,
+          is_new = $15,
+          updated_at = CURRENT_TIMESTAMP
+       WHERE id = $16
        RETURNING *`,
       [
         name,
         name.toLowerCase().replace(/\s+/g, '-'),
         category,
+        product_type,
         description,
         price,
         sale_price || null,
@@ -125,7 +200,7 @@ const updateProduct = async (req, res) => {
         sku,
         images || null,
         age_range || null,
-        features || [],
+        parsedFeatures,
         is_active ?? true,
         is_bestseller ?? false,
         is_new ?? false,

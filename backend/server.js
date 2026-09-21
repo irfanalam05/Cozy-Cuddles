@@ -1,3 +1,5 @@
+const path = require('path')
+
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
@@ -12,6 +14,8 @@ const userRoutes = require('./routes/userRoutes')
 // Middleware
 app.use(cors())
 app.use(express.json())
+app.use('/uploads', express.static('uploads'))
+app.use('/products', express.static(path.join(__dirname, '../public/products')))
 app.use('/api/products', productRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/orders', orderRoutes)

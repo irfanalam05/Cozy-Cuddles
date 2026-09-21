@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ResponsiveContainer, AreaChart,Area, CartesianGrid, XAxis, YAxis,Tooltip} from 'recharts'
+import { categories } from '../data/categories'
 function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('dashboard')
   const [products, setProducts] = useState([])
@@ -38,6 +39,7 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
   const [productForm, setProductForm] = useState({
     name: '',
     category: '',
+    product_type: '',
     price: '',
     sale_price: '',
     stock: '',
@@ -48,6 +50,8 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
     features: '',
     is_active: true
   })
+
+  const [existingImages, setExistingImages] = useState([])
 
   const revenueYears = [
     ...new Set(
@@ -108,36 +112,46 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
 
   const handleAddProduct = async (e) => {
     e.preventDefault()
-
     try {
       const url = editingProductId
-        ? `http://localhost:5000/api/products/${editingProductId}`
-        : 'http://localhost:5000/api/products'
+        ? `http://localhost:5000/api/products/${editingProductId}?category=${encodeURIComponent(productForm.category)}&product_type=${encodeURIComponent(productForm.product_type)}`
+        : `http://localhost:5000/api/products?category=${encodeURIComponent(productForm.category)}&product_type=${encodeURIComponent(productForm.product_type)}`
 
       const method = editingProductId ? 'PUT' : 'POST'
+
+      const formData = new FormData()
+      formData.append('name', productForm.name)
+      formData.append('category', productForm.category)
+      formData.append('product_type', productForm.product_type)
+      formData.append('price', productForm.price)
+      formData.append('sale_price', productForm.sale_price)
+      formData.append('stock', productForm.stock)
+      formData.append('sku', productForm.sku)
+      formData.append('description', productForm.description)
+      formData.append('age_range', productForm.age_range)
+      formData.append(
+        'features',
+        productForm.features
+          ? productForm.features.split(',').map((f) => f.trim()).join(',')
+          : ''
+      )
+      formData.append('is_active', productForm.is_active)
+      formData.append('is_bestseller', false)
+      formData.append('is_new', true)
+
+      if (productForm.images && productForm.images.length > 0) {
+        productForm.images.forEach((image) => {
+          formData.append('images', image)
+        })
+      }
 
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          'X-Product-Category': productForm.category,
+          'X-Product-Type': productForm.product_type
         },
-        body: JSON.stringify({
-          name: productForm.name,
-          category: productForm.category,
-          price: productForm.price,
-          sale_price: productForm.sale_price,
-          stock: productForm.stock,
-          sku: productForm.sku,
-          description: productForm.description,
-          images: productForm.images ? [productForm.images] : [],
-          age_range: productForm.age_range,
-          features: productForm.features
-            ? productForm.features.split(',').map((feature) => feature.trim())
-            : [],
-          is_active: productForm.is_active,
-          is_bestseller: false,
-          is_new: true,
-        }),
+        body: formData,
       })
 
       const data = await response.json()
@@ -168,6 +182,7 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
       console.log('Product Save:', data)
     } catch (error) {
       console.error('Product save error:', error)
+      alert(error.message || 'Product save failed')
     }
   }
 
@@ -430,7 +445,28 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                 <h1>Products</h1>
               </div>
 
-              <button className="admin-view-btn" onClick={() => setActiveSection('add-product')}>
+              <button className="admin-view-btn" onClick={() => {
+                  setEditingProductId(null)
+                  setExistingImages([])
+
+                  setProductForm({
+                    name: '',
+                    category: '',
+                    product_type: '',
+                    price: '',
+                    sale_price: '',
+                    stock: '',
+                    sku: '',
+                    description: '',
+                    images: [],
+                    age_range: '',
+                    features: '',
+                    is_active: true
+                  })
+
+                  setActiveSection('add-product')
+                }}
+              >
                 + Add Product
               </button>
             </div>
@@ -536,7 +572,13 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                 })
                 .map((product) => (
                 <div className="admin-product-row" key={product.id}>
-                  <img src={product.images?.[0]} alt={product.name} />
+                  <img src={
+                      product.images?.[0]
+                        ? `http://localhost:5000${product.images[0]}`
+                        : ''
+                    }
+                    alt={product.name}
+                  />
                   <div>
                     <strong>{product.name}</strong>
                     <small>#{product.sku}</small>
@@ -549,15 +591,17 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
 
                   <div>
                     <button onClick={() => {
+                      setExistingImages(product.images || [])
                       setProductForm({
                         name: product.name,
                         category: product.category,
+                        product_type: product.product_type || '',
                         price: product.price,
                         sale_price: product.sale_price || '',
                         stock: product.stock,
                         sku: product.sku,
                         description: product.description || '',
-                        images: product.images?.[0] || '',
+                        images: [],
                         age_range: product.age_range || '',
                         features: product.features?.join(', ') || '',
                         is_active: product.is_active
@@ -1351,21 +1395,43 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
               <div className="admin-form-group">
                 <label>Category</label>
                 <select value={productForm.category} onChange={(e) =>
-                  setProductForm({
-                    ...productForm, category: e.target.value
+                    setProductForm({
+                      ...productForm,
+                      category: e.target.value,
+                      product_type: ''
+                    })
+                  } >
+                  <option value="">Select category</option>
+
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="admin-form-group">
+                <label>Product Type</label>
+                <select
+                  value={productForm.product_type}
+                  onChange={(e) =>
+                    setProductForm({
+                      ...productForm,
+                      product_type: e.target.value
                     })
                   }
-                  >
-                  <option value="">Select category</option>
-                  <option>Swings</option>
-                  <option>Sleeping Swings</option>
-                  <option>Mosquito Beds</option>
-                  <option>Sleeping Bags</option>
-                  <option>Baby Playgyms</option>
-                  <option>Baby Walkers</option>
-                  <option>Baby Tricycles</option>
-                  <option>Ride-on Toys</option>
-                  <option>Baby Bullets</option>
+                  disabled={!productForm.category}
+                >
+                  <option value="">Select product type</option>
+
+                  {categories
+                    .find((category) => category.name === productForm.category)
+                    ?.products.map((product) => (
+                      <option key={product.name} value={product.name}>
+                        {product.name}
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -1450,15 +1516,68 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
               </div>
 
               <div className="admin-form-group">
-                <label>Product Image</label>
-                <input type="text" placeholder="Enter product image path" value={productForm.images}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      images: e.target.value
-                    })
-                  }
+                <label>Product Images</label>
+
+                {existingImages.length > 0 && (
+                  <div style={{ marginTop: '10px' }}>
+                    <p>Existing Images</p>
+
+                    <div style={{
+                      display: 'flex',
+                      gap: '10px',
+                      flexWrap: 'wrap'
+                    }}>
+                      {existingImages.map((image, index) => (
+                        <div key={`${image}-${index}`}>
+                          <img
+                            src={`http://localhost:5000${image}`}
+                            alt={`Existing product ${index + 1}`}
+                            style={{
+                              width: '100px',
+                              height: '100px',
+                              objectFit: 'cover',
+                              borderRadius: '8px'
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  multiple
+                  onChange={(e) => {
+                    const selectedFiles = Array.from(e.target.files)
+
+                    setProductForm((prev) => ({
+                      ...prev,
+                      images: [
+                        ...(Array.isArray(prev.images) ? prev.images : []),
+                        ...selectedFiles
+                      ]
+                    }))
+
+                    e.target.value = ''
+                  }}
                 />
+
+                {Array.isArray(productForm.images) && productForm.images.length > 0 && (
+                  <div style={{ marginTop: '10px' }}>
+                    <p>
+                      {productForm.images.length} image
+                      {productForm.images.length > 1 ? 's' : ''} selected
+                    </p>
+
+                    {productForm.images.map((image, index) => (
+                      <div key={`${image.name}-${index}`}>
+                        {image.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="admin-form-row">
