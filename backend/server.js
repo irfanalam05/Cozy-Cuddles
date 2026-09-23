@@ -11,6 +11,7 @@ const orderRoutes = require('./routes/orderRoutes')
 const inventoryRoutes = require('./routes/inventoryRoutes')
 const userRoutes = require('./routes/userRoutes')
 
+const categoryRoutes = require('./routes/categoryRoutes')
 // Middleware
 app.use(cors())
 app.use(express.json())
@@ -21,6 +22,8 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/inventory', inventoryRoutes)
 app.use('/api/users', userRoutes)
+
+app.use('/api/categories', categoryRoutes)
 
 // Test route
 app.get('/', (req, res) => {

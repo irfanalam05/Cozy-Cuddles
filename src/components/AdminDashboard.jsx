@@ -8,6 +8,9 @@ function AdminDashboard() {
   const [orders, setOrders] = useState([])
   const [users, setUsers] = useState([])
 
+  const [dbCategories, setDbCategories] = useState([])
+  const [dbProductTypes, setDbProductTypes] = useState([])
+
   const [inventory, setInventory] = useState([])
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false)
   const [selectedInventoryItem, setSelectedInventoryItem] = useState(null)
@@ -36,6 +39,21 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
   const [showSuccess, setShowSuccess] = useState(false)
   const [editingProductId, setEditingProductId] = useState(null)
   const [deleteProductId, setDeleteProductId] = useState(null)
+
+  const [categoryManagementMode, setCategoryManagementMode] = useState('category')
+  const [newCategoryForm, setNewCategoryForm] = useState({
+    name: '',
+    code: '',
+    folder_name: ''
+  })
+
+  const [newProductTypeForm, setNewProductTypeForm] = useState({
+    category_id: '',
+    name: '',
+    code: '',
+    folder_name: ''
+  })
+
   const [productForm, setProductForm] = useState({
     name: '',
     category: '',
@@ -138,6 +156,11 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
       formData.append('is_active', productForm.is_active)
       formData.append('is_bestseller', false)
       formData.append('is_new', true)
+
+      formData.append(
+        'existing_images',
+        JSON.stringify(existingImages)
+      )
 
       if (productForm.images && productForm.images.length > 0) {
         productForm.images.forEach((image) => {
@@ -337,6 +360,49 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
         console.error('Products fetch error:', error)
       })
   }, [])
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(
+          'http://localhost:5000/api/categories'
+        )
+
+        const data = await response.json()
+
+        setDbCategories(data)
+      } catch (error) {
+        console.error('Failed to fetch categories:', error)
+      }
+    }
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    if (!editingProductId || !productForm.category) return
+
+    const fetchProductTypes = async () => {
+      const selectedCategory = dbCategories.find(
+        (category) => category.name === productForm.category
+      )
+
+      if (!selectedCategory) return
+
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/categories/${selectedCategory.id}/product-types`
+        )
+
+        const data = await response.json()
+
+        setDbProductTypes(data)
+      } catch (error) {
+        console.error('Failed to fetch product types for edit:', error)
+      }
+    }
+
+    fetchProductTypes()
+  }, [editingProductId, productForm.category, dbCategories])
 
   useEffect(() => {
     fetch('http://localhost:5000/api/orders')
@@ -1374,6 +1440,16 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                 <h1>{editingProductId ? 'Edit Product' : 'Add Product'}</h1>
                 <p>Add a new product to your Cozy & Cuddles store</p>
               </div>
+
+              {!editingProductId && (
+                <button
+                  className="admin-view-btn"
+                  type="button"
+                  onClick={() => setActiveSection('category-management')}
+                >
+                  + Add Category / Type
+                </button>
+              )}
             </div>
 
             <form className="admin-product-form" onSubmit={handleAddProduct} >
@@ -1394,16 +1470,43 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
 
               <div className="admin-form-group">
                 <label>Category</label>
-                <select value={productForm.category} onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      category: e.target.value,
-                      product_type: ''
-                    })
-                  } >
+                <select value={productForm.category} onChange={async (e) => {
+                    const selectedCategory = e.target.value
+
+                      const selectedCategoryData = dbCategories.find(
+                        (category) => category.name === selectedCategory
+                      )
+
+                      setProductForm({
+                        ...productForm,
+                        category: selectedCategory,
+                        category_code: selectedCategoryData?.code || '',
+                        product_type: '',
+                        product_type_code: ''
+                      })
+
+                      setDbProductTypes([])
+
+                      if (!selectedCategory) return
+                    console.log('Selected Category:', selectedCategoryData)
+
+                    if (!selectedCategoryData) return
+
+                    try {
+                      const response = await fetch(
+                        `http://localhost:5000/api/categories/${selectedCategoryData.id}/product-types`
+                      )
+
+                      const data = await response.json()
+
+                      setDbProductTypes(data)
+                    } catch (error) {
+                      console.error('Failed to fetch product types:', error)
+                    }
+                  }} >
                   <option value="">Select category</option>
 
-                  {categories.map((category) => (
+                  {dbCategories.map((category) => (
                     <option key={category.id} value={category.name}>
                       {category.name}
                     </option>
@@ -1415,23 +1518,57 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                 <label>Product Type</label>
                 <select
                   value={productForm.product_type}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const selectedType = dbProductTypes.find(
+                      (type) => type.name === e.target.value
+                    )
+
+                    const selectedCategory = dbCategories.find(
+                      (category) => category.name === productForm.category
+                    )
+
+                    const prefix =
+                      selectedCategory && selectedType
+                        ? `${selectedCategory.code}-${selectedType.code}`
+                        : ''
+
+                    const matchingSkus = products
+                      .map((product) => product.sku)
+                      .filter((sku) => sku?.startsWith(`${prefix}-`))
+
+                    let maxNumber = 0
+
+                    matchingSkus.forEach((sku) => {
+                      const match = sku.match(/-(\d+)$/)
+
+                      if (match) {
+                        maxNumber = Math.max(maxNumber, Number(match[1]))
+                      }
+                    })
+
+                    const nextSku = prefix
+                      ? `${prefix}-${String(maxNumber + 1).padStart(3, '0')}`
+                      : ''
+
                     setProductForm({
                       ...productForm,
-                      product_type: e.target.value
+                      product_type: e.target.value,
+                      sku: nextSku
                     })
-                  }
-                  disabled={!productForm.category}
+                  }}
+                  disabled={!productForm.category || dbProductTypes.length === 0}
                 >
-                  <option value="">Select product type</option>
+                  <option value="">
+                    {productForm.category && dbProductTypes.length === 0
+                      ? 'Loading product types...'
+                      : 'Select product type'}
+                  </option>
 
-                  {categories
-                    .find((category) => category.name === productForm.category)
-                    ?.products.map((product) => (
-                      <option key={product.name} value={product.name}>
-                        {product.name}
-                      </option>
-                    ))}
+                  {dbProductTypes.map((productType) => (
+                    <option key={productType.id} value={productType.name}>
+                      {productType.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1477,13 +1614,11 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
 
               <div className="admin-form-group">
                 <label>SKU</label>
-                <input type="text" placeholder="Enter product SKU" value={productForm.sku}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      sku: e.target.value
-                    })
-                  }
+                <input
+                  type="text"
+                  placeholder="SKU will be generated automatically"
+                  value={productForm.sku}
+                  readOnly
                 />
               </div>
 
@@ -1528,7 +1663,14 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                       flexWrap: 'wrap'
                     }}>
                       {existingImages.map((image, index) => (
-                        <div key={`${image}-${index}`}>
+                        <div
+                          key={`${image}-${index}`}
+                          style={{
+                            position: 'relative',
+                            width: '100px',
+                            height: '100px'
+                          }}
+                        >
                           <img
                             src={`http://localhost:5000${image}`}
                             alt={`Existing product ${index + 1}`}
@@ -1539,6 +1681,35 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                               borderRadius: '8px'
                             }}
                           />
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setExistingImages((prevImages) =>
+                                prevImages.filter((_, imageIndex) => imageIndex !== index)
+                              )
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: '-6px',
+                              right: '-6px',
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              border: 'none',
+                              background: '#e53e3e',
+                              color: '#fff',
+                              fontSize: '16px',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              lineHeight: '1'
+                            }}
+                          >
+                            ×
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1612,6 +1783,279 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
               </button>
             </form>
 
+          </div>
+        )}
+
+        {activeSection === 'category-management' && (
+          <div className="admin-content-card">
+
+            <div className="admin-content-heading">
+              <div>
+                <p className="admin-tag">CATEGORY MANAGEMENT</p>
+                <h1>Add Category</h1>
+                <p>Create a new product category</p>
+              </div>
+
+              <button className="admin-view-btn" type="button" onClick={() => {
+                  setProductForm({
+                    name: '',
+                    category: '',
+                    product_type: '',
+                    price: '',
+                    sale_price: '',
+                    stock: '',
+                    sku: '',
+                    description: '',
+                    images: '',
+                    age_range: '',
+                    features: '',
+                    is_active: true
+                  })
+
+                  setDbProductTypes([])
+                  setActiveSection('add-product')
+                }}
+                >
+                Back to Add Product
+              </button>
+            </div>
+
+            <div className="admin-product-form">
+
+              <div className="admin-form-group">
+                <label>Category Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Baby Toys"
+                  value={newCategoryForm.name}
+                  onChange={(e) =>
+                    setNewCategoryForm({
+                      ...newCategoryForm,
+                      name: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Category Code</label>
+                <input
+                  type="text"
+                  placeholder="e.g. BT"
+                  value={newCategoryForm.code}
+                  onChange={(e) =>
+                    setNewCategoryForm({
+                      ...newCategoryForm,
+                      code: e.target.value.toUpperCase()
+                    })
+                  }
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <label>Folder Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. baby-toys"
+                  value={newCategoryForm.folder_name}
+                  onChange={(e) =>
+                    setNewCategoryForm({
+                      ...newCategoryForm,
+                      folder_name: e.target.value
+                    })
+                  }
+                />
+              </div>
+
+              <button
+                type="button"
+                className="admin-view-btn"
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      'http://localhost:5000/api/categories',
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(newCategoryForm)
+                      }
+                    )
+
+                    const data = await response.json()
+
+                    if (!response.ok) {
+                      alert(data.message || 'Failed to add category')
+                      return
+                    }
+
+                    alert('Category added successfully')
+
+                    setNewCategoryForm({
+                      name: '',
+                      code: '',
+                      folder_name: ''
+                    })
+
+                    const categoriesResponse = await fetch(
+                      'http://localhost:5000/api/categories'
+                    )
+
+                    const categoriesData = await categoriesResponse.json()
+
+                    setDbCategories(categoriesData)
+
+                  } catch (error) {
+                    console.error('Add category error:', error)
+                    alert('Failed to add category')
+                  }
+                }}
+              >
+                Add Category
+              </button>
+
+            </div>
+
+            <div style={{ marginTop: '50px' }}>
+              <div className="admin-content-heading">
+                <div>
+                  <p className="admin-tag">PRODUCT TYPE MANAGEMENT</p>
+                  <h2>Add Product Type</h2>
+                  <p>Add a product type under an existing category</p>
+                </div>
+              </div>
+
+              <div className="admin-product-form">
+                <div className="admin-form-group">
+                  <label>Select Category</label>
+
+                  <select
+                    value={newProductTypeForm.category_id}
+                    onChange={(e) =>
+                      setNewProductTypeForm({
+                        ...newProductTypeForm,
+                        category_id: e.target.value
+                      })
+                    }
+                  >
+                    <option value="">Select category</option>
+
+                    {dbCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Product Type Name</label>
+
+                  <input
+                    type="text"
+                    placeholder="e.g. Green Walker"
+                    value={newProductTypeForm.name}
+                    onChange={(e) =>
+                      setNewProductTypeForm({
+                        ...newProductTypeForm,
+                        name: e.target.value
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Product Type Code</label>
+
+                  <input
+                    type="text"
+                    placeholder="e.g. GW"
+                    value={newProductTypeForm.code}
+                    onChange={(e) =>
+                      setNewProductTypeForm({
+                        ...newProductTypeForm,
+                        code: e.target.value.toUpperCase()
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Folder Name</label>
+
+                  <input
+                    type="text"
+                    placeholder="e.g. green-walker"
+                    value={newProductTypeForm.folder_name}
+                    onChange={(e) =>
+                      setNewProductTypeForm({
+                        ...newProductTypeForm,
+                        folder_name: e.target.value
+                      })
+                    }
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className="admin-view-btn"
+                  onClick={async () => {
+                    try {
+                      if (!newProductTypeForm.category_id) {
+                        alert('Please select a category')
+                        return
+                      }
+
+                      const response = await fetch(
+                        `http://localhost:5000/api/categories/${newProductTypeForm.category_id}/product-types`,
+                        {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            name: newProductTypeForm.name,
+                            code: newProductTypeForm.code,
+                            folder_name: newProductTypeForm.folder_name
+                          })
+                        }
+                      )
+
+                      const data = await response.json()
+
+                      if (!response.ok) {
+                        alert(data.message || 'Failed to add product type')
+                        setNewProductTypeForm({
+                          category_id: '',
+                          name: '',
+                          code: '',
+                          folder_name: ''
+                        })
+                        return
+                      }
+
+                      alert('Product type added successfully')
+
+                      setNewProductTypeForm({
+                        category_id: '',
+                        name: '',
+                        code: '',
+                        folder_name: ''
+                      })
+
+                    } catch (error) {
+                      console.error('Add product type error:', error)
+                      alert('Failed to add product type')
+                    }
+                  }}
+                >
+                  Add Product Type
+                </button>
+
+              </div>
+
+            </div>
           </div>
         )}
 

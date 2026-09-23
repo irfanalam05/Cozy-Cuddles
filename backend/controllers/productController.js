@@ -1,4 +1,53 @@
 const pool = require('../config/database')
+
+const generateNextSku = async (category, productType) => {
+  const codeResult = await pool.query(
+    `SELECT c.code AS category_code, pt.code AS product_type_code
+     FROM categories c
+     JOIN product_types pt
+       ON pt.category_id = c.id
+     WHERE c.name = $1
+       AND pt.name = $2`,
+    [category, productType]
+  )
+
+  if (codeResult.rows.length === 0) {
+    throw new Error('Invalid category or product type')
+  }
+
+  const { category_code, product_type_code } = codeResult.rows[0]
+
+  const prefix = `${category_code}-${product_type_code}`
+
+  const skuResult = await pool.query(
+    `SELECT sku
+     FROM products
+     WHERE sku LIKE $1`,
+    [`${prefix}-%`]
+  )
+
+  let maxNumber = 0
+
+  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const skuPattern = new RegExp(`^${escapedPrefix}-(\\d+)$`)
+
+  skuResult.rows.forEach((row) => {
+    const match = row.sku?.match(skuPattern)
+
+    if (match) {
+      const number = Number(match[1])
+
+      if (number > maxNumber) {
+        maxNumber = number
+      }
+    }
+  })
+
+  const nextNumber = String(maxNumber + 1).padStart(3, '0')
+
+  return `${prefix}-${nextNumber}`
+}
+
 const createProduct = async (req, res) => {
   try {
   const {
@@ -9,7 +58,6 @@ const createProduct = async (req, res) => {
     price,
     sale_price,
     stock,
-    sku,
     age_range,
     features,
     is_active,
@@ -48,6 +96,11 @@ const parsedFeatures = features
   ? features.split(',').map((feature) => feature.trim())
   : []
 
+const generatedSku = await generateNextSku(
+  category,
+  product_type
+)
+
 
     const result = await pool.query(
       `INSERT INTO products
@@ -63,7 +116,7 @@ const parsedFeatures = features
         price,
         sale_price || null,
         stock || 0,
-        sku,
+        generatedSku,
         images,
         age_range || null,
         parsedFeatures,
@@ -113,27 +166,30 @@ const updateProduct = async (req, res) => {
     const { id } = req.params
 
     const {
-        name,
-        category,
-        product_type,
-        description,
-        price,
-        sale_price,
-        stock,
-        sku,
-        age_range,
-        features,
-        is_active,
-        is_bestseller,
-        is_new
-    } = req.body
+      name,
+      category,
+      product_type,
+      description,
+      price,
+      sale_price,
+      stock,
+      sku,
+      age_range,
+      features,
+      is_active,
+      is_bestseller,
+      is_new,
+      existing_images
+  } = req.body
 
     const existingProduct = await pool.query(
       'SELECT images FROM products WHERE id = $1',
       [id]
     )
 
-    const existingImages = existingProduct.rows[0]?.images || []
+    const existingImages = existing_images
+    ? JSON.parse(existing_images)
+    : (existingProduct.rows[0]?.images || [])
 
     const categoryFolderMap = {
       'Mosquito Beds': 'mosquito-bed',

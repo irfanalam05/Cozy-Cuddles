@@ -77,3 +77,24 @@ CREATE TABLE inventory_logs (
     note TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    folder_name VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS product_types (
+    id SERIAL PRIMARY KEY,
+    category_id INTEGER NOT NULL
+        REFERENCES categories(id)
+        ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    code VARCHAR(30) NOT NULL,
+    folder_name VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(category_id, name),
+    UNIQUE(category_id, code)
+);
