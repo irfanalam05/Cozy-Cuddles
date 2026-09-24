@@ -496,7 +496,11 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
           </button>
         </nav>
 
-        <button className="admin-logout">
+        <button className="admin-logout" onClick={() => {
+            localStorage.removeItem('adminToken')
+            window.location.href = '/admin'
+          }}
+         >
           <span className="material-symbols-outlined">logout</span>
           Logout
         </button>
@@ -954,12 +958,13 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                   </div>
                 </div>
               ))}
+              </div>
+
               <div className="inventory-history">
                 <div className="admin-content-heading">
                   <div>
-                    <p className="admin-tag">INVENTORY HISTORY</p>
-                    <h2>Stock Movement History</h2>
-                    <p>Track all stock additions, orders and cancellations</p>
+                    {/* <h1><p className="admin-tag">INVENTORY HISTORY</p></h1> */}
+                    <h4><p>Track all stock additions, orders and cancellations</p> </h4>
                   </div>
                 </div>
 
@@ -997,7 +1002,6 @@ const [revenueYear, setRevenueYear] = useState(new Date().getFullYear())
                 </div>
               </div>
             </div>
-          </div>
         )}
 
         {inventoryModalOpen && selectedInventoryItem && (
